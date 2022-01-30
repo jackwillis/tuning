@@ -1,4 +1,5 @@
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <variant>
 #include <vector>
@@ -10,8 +11,14 @@
 
 const int CENTS_PER_OCTAVE = 1200;
 
-// TuningInterval#cents(double)
-// TuningInterval#cents(rational)
+// https://stackoverflow.com/a/11714601/3551701
+int euclidean_remainder(int a, int b)
+{
+  assert(b != 0);
+  int r = a % b;
+  return r >= 0 ? r : r + std::abs(b);
+}
+
 struct TuningIntervalCentsVisitor
 {
   double operator()(double cents) const
@@ -27,8 +34,6 @@ struct TuningIntervalCentsVisitor
   }
 };
 
-// TuningInterval#ratio(double)
-// TuningInterval#ratio(rational)
 struct TuningIntervalRatioVisitor
 {
   // convert cents to ratio
@@ -43,8 +48,6 @@ struct TuningIntervalRatioVisitor
   }
 };
 
-// TuningInterval#str(double)
-// TuningInterval#str(rational)
 struct TuningIntervalStrVisitor
 {
   std::string operator()(double cents) const
@@ -86,6 +89,11 @@ public:
     return std::visit(TuningIntervalRatioVisitor{}, this->v);
   }
 
+  TuningInterval add_cents(double delta) const
+  {
+    return TuningInterval{this->cents() + delta};
+  }
+
   std::string str() const
   {
     return std::visit(TuningIntervalStrVisitor{}, this->v);
@@ -114,7 +122,18 @@ public:
 
   int degree() const
   {
-    return (int)intervals.size();
+    return static_cast<int>(intervals.size());
+  }
+
+  TuningInterval at(int n) const
+  {
+    const int index = euclidean_remainder(n - 1, this->degree());
+    const auto interval = intervals.at((std::size_t)index);
+
+    const int octave = (n - 1) / this->degree();
+    const double octave_cents = (octave - 1) * CENTS_PER_OCTAVE;
+
+    return interval.add_cents(octave_cents);
   }
 
   void stream_scala(std::ostream &out) const
@@ -124,25 +143,28 @@ public:
         << this->description << '\n'
         << this->degree() << "\n!\n";
 
-    for (const auto itv : this->intervals)
+    for (const auto &interval : this->intervals)
     {
-      out << itv.str() << '\n';
+      out << interval.str() << '\n';
     }
   }
 
   void stream_table(std::ostream &out) const
   {
-    const int column_width = 15;
-    const auto pad = std::setw(column_width);
+    const auto small_pad = std::setw(6);
+    const auto big_pad = std::setw(15);
 
-    out << "Value" << pad
-        << "Ratio" << pad
+    out << small_pad << "Index"
+        << big_pad << "Value"
+        << big_pad << "Ratio"
         << '\n';
 
-    for (const auto itv : this->intervals)
+    for (int i = this->degree() * -1; i < this->degree() * 3; ++i)
     {
-      out << pad << itv.str()
-          << pad << itv.ratio()
+      const auto interval = this->at(i);
+      out << small_pad << i
+          << big_pad << interval.str()
+          << big_pad << interval.ratio()
           << '\n';
     }
   }
