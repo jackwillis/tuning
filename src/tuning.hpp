@@ -7,6 +7,15 @@
 
 #include <boost/rational.hpp>
 
+// https://dev.to/tmr232/that-overloaded-trick-overloading-lambdas-in-c17
+template <class... Ts>
+struct overloaded : Ts...
+{
+  using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
 // Refer to source of haskell package hmt
 // https://hackage.haskell.org/package/hmt-0.16/docs/
 
@@ -19,50 +28,6 @@ static int euclidean_remainder(int a, int b)
   int r = a % b;
   return r >= 0 ? r : r + std::abs(b);
 }
-
-struct TuningIntervalCentsVisitor
-{
-  double operator()(double cents) const
-  {
-    return cents;
-  }
-
-  // convert ratio to cents
-  double operator()(boost::rational<int> ratio) const
-  {
-    const double f_ratio = boost::rational_cast<double>(ratio);
-    return std::log2(f_ratio) * CENTS_PER_OCTAVE;
-  }
-};
-
-struct TuningIntervalRatioVisitor
-{
-  // convert cents to ratio
-  double operator()(double cents) const
-  {
-    return std::pow(2, cents / CENTS_PER_OCTAVE);
-  }
-
-  double operator()(boost::rational<int> ratio) const
-  {
-    return boost::rational_cast<double>(ratio);
-  }
-};
-
-struct TuningIntervalStrVisitor
-{
-  std::string operator()(double cents) const
-  {
-    return std::to_string(cents);
-  }
-
-  std::string operator()(boost::rational<int> ratio) const
-  {
-    std::stringstream rational_ss;
-    rational_ss << ratio;
-    return rational_ss.str();
-  }
-};
 
 // Tuning intervals can be written as either
 // cents (type double), meaning percent of a semitone, or as a
@@ -122,7 +87,7 @@ public:
     return interval.transpose_octaves(octave);
   }
 
-  void stream_scala(std::ostream &out) const
+  void stream_scala(std::ostream &out)
   {
     out << "! "
         << this->name << "\n! \n"
@@ -135,12 +100,13 @@ public:
     }
   }
 
-  void stream_table(std::ostream &out) const
+  void stream_table(std::ostream &out)
   {
     const auto small_pad = std::setw(6);
     const auto big_pad = std::setw(15);
 
     out << small_pad << "Index"
+        << big_pad << "Str"
         << big_pad << "Cents"
         << big_pad << "Ratio"
         << '\n';
@@ -149,6 +115,7 @@ public:
     {
       const auto interval = this->at(i);
       out << small_pad << i
+          << big_pad << interval.str()
           << big_pad << interval.cents()
           << big_pad << interval.ratio()
           << '\n';

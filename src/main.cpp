@@ -5,7 +5,7 @@
 
 int main()
 {
-  const Tuning bremmer_ebvt3 = Tuning{
+  Tuning bremmer_ebvt3 = Tuning{
       "bremmer_ebvt3.scl",
       "Bill Bremmer EBVT III temperament (2011)",
       12,
