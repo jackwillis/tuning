@@ -94,6 +94,11 @@ public:
     return TuningInterval{this->cents() + delta};
   }
 
+  TuningInterval transpose_octaves(int octaves) const
+  {
+    return this->add_cents(octaves * CENTS_PER_OCTAVE);
+  }
+
   std::string str() const
   {
     return std::visit(TuningIntervalStrVisitor{}, this->v);
@@ -130,10 +135,9 @@ public:
     const int index = euclidean_remainder(n - 1, this->degree());
     const auto interval = intervals.at((std::size_t)index);
 
-    const int octave = (n - 1) / this->degree();
-    const double octave_cents = (octave - 1) * CENTS_PER_OCTAVE;
+    const int octave = ((n - 1) / this->degree()) - 1;
 
-    return interval.add_cents(octave_cents);
+    return interval.transpose_octaves(octave);
   }
 
   void stream_scala(std::ostream &out) const
@@ -155,15 +159,15 @@ public:
     const auto big_pad = std::setw(15);
 
     out << small_pad << "Index"
-        << big_pad << "Value"
+        << big_pad << "Cents"
         << big_pad << "Ratio"
         << '\n';
 
-    for (int i = this->degree() * -1; i < this->degree() * 3; ++i)
+    for (int i = this->degree() * -1; i != this->degree() * 3; ++i)
     {
       const auto interval = this->at(i);
       out << small_pad << i
-          << big_pad << interval.str()
+          << big_pad << interval.cents()
           << big_pad << interval.ratio()
           << '\n';
     }
