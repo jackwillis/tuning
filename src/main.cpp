@@ -92,9 +92,6 @@ public:
   }
 };
 
-const int column_width = 15; // max length of double
-auto pad = std::setw(column_width);
-
 class Tuning
 {
 private:
@@ -105,43 +102,46 @@ private:
 public:
   Tuning(std::string name,
          std::string description,
+         int degree,
          std::vector<TuningInterval> intervals)
-      : name(name), description(description), intervals(intervals){};
+      : name(name), description(description), intervals(intervals)
+  {
+    if (degree != this->degree())
+    {
+      throw std::invalid_argument("Could not build scale: Wrong scale degree specified.");
+    }
+  };
 
   int degree() const
   {
     return (int)intervals.size();
   }
 
-  void print_scala() const
+  void stream_scala(std::ostream &out) const
   {
-    const int column_width = 15; // max length of double
-    auto pad = std::setw(column_width);
-
-    std::cout << "! "
-              << this->name << "\n! \n"
-              << this->description << '\n'
-              << this->degree() << "\n!\n";
+    out << "! "
+        << this->name << "\n! \n"
+        << this->description << '\n'
+        << this->degree() << "\n!\n";
 
     for (const auto itv : this->intervals)
     {
-      std::cout << itv.str() << '\n';
+      out << itv.str() << '\n';
     }
   }
 
-  void print_table() const
+  void stream_table(std::ostream &out) const
   {
-    const int column_width = 15; // max length of double
-    auto pad = std::setw(column_width);
+    const int column_width = 15;
+    const auto pad = std::setw(column_width);
 
-    std::cout << "Value" << pad
-              << "Ratio" << pad
-              << '\n';
+    out << "Value" << pad
+        << "Ratio" << pad
+        << '\n';
 
     for (const auto itv : this->intervals)
     {
-      std::cout
-          << pad << itv.str()
+      out << pad << itv.str()
           << pad << itv.ratio()
           << '\n';
     }
@@ -153,6 +153,7 @@ int main()
   const Tuning bremmer_ebvt3 = Tuning{
       "bremmer_ebvt3.scl",
       "Bill Bremmer EBVT III temperament (2011)",
+      12,
       std::vector<TuningInterval>{
           TuningInterval{94.87252},
           TuningInterval{197.05899},
@@ -167,9 +168,9 @@ int main()
           TuningInterval{1096.17389},
           TuningInterval{2, 1}}};
 
-  bremmer_ebvt3.print_scala();
+  bremmer_ebvt3.stream_scala(std::cout);
   std::cout << "---------------------------------------------\n";
-  bremmer_ebvt3.print_table();
+  bremmer_ebvt3.stream_table(std::cout);
 
   return EXIT_SUCCESS;
 }

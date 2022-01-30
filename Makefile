@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++20 -g -Wall -Wextra -Wconversion -Wsign-conversion -Wpedantic -Wfloat-equal
+CXXFLAGS = -std=c++17 -g -Wall -Wextra -Wconversion -Wsign-conversion -Wpedantic -Wfloat-equal
 
 all: .prepare build/scala-parser
 
