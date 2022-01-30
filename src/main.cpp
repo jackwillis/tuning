@@ -1,75 +1,59 @@
 #include <cmath>
 #include <iostream>
+#include <variant>
 #include <vector>
 #include <boost/rational.hpp>
-using std::ostream;
-using std::vector;
+
+struct CentsVisitor
+{
+  const int CENTS_PER_OCTAVE = 1200;
+
+  double operator()(double cents) const
+  {
+    return cents;
+  }
+
+  double operator()(boost::rational<int> ratio) const
+  {
+    double f_ratio = boost::rational_cast<double>(ratio);
+    return std::log2(f_ratio) * CENTS_PER_OCTAVE;
+  }
+};
 
 class ScaleInterval
 {
 private:
-  double m_cents;
+  const std::variant<double, boost::rational<int>> v;
 
 public:
-  double cents() { return m_cents; };
-};
+  ScaleInterval(double cents) : v(cents){};
+  ScaleInterval(int numer, int denom) : v(boost::rational<int>(numer, denom)){};
 
-class CentsInterval : public ScaleInterval
-{
-private:
-  double m_cents;
-
-public:
-  CentsInterval(double cents) : m_cents(cents){};
-};
-
-class RationalInterval : public ScaleInterval
-{
-private:
-  boost::rational<int> m_rational;
-  double m_cents;
-
-public:
-  const int CENTS_PER_OCTAVE = 1200;
-
-  RationalInterval(int numer, int denom)
+  double cents()
   {
-    // std::cout << numer << '\n';
-    m_rational = boost::rational<int>(numer, denom);
-    // std::cout << m_rational << '\n';
-
-    // calculate m_cents
-    double f_rational = boost::rational_cast<double>(m_rational);
-    m_cents = CENTS_PER_OCTAVE * std::log2(f_rational);
-    // std::cout << m_cents << '\n';
-  };
+    return std::visit(CentsVisitor{}, v);
+  }
 };
-
-////////////////////////////
 
 int main()
 {
-  const std::vector<ScaleInterval> bremmer_ebvt3 =
-      {CentsInterval{94.87252},
-       CentsInterval{197.05899},
-       CentsInterval{297.80000},
-       CentsInterval{395.79561},
-       RationalInterval{4, 3},
-       CentsInterval{595.89736},
-       CentsInterval{699.31190},
-       CentsInterval{796.82704},
-       CentsInterval{896.20299},
-       CentsInterval{999.10000},
-       CentsInterval{1096.17389},
-       RationalInterval{2, 1}};
+  std::vector<ScaleInterval> bremmer_ebvt3 = {
+      ScaleInterval{94.87252},
+      ScaleInterval{197.05899},
+      ScaleInterval{297.80000},
+      ScaleInterval{395.79561},
+      ScaleInterval{4, 3},
+      ScaleInterval{595.89736},
+      ScaleInterval{699.31190},
+      ScaleInterval{796.82704},
+      ScaleInterval{896.20299},
+      ScaleInterval{999.10000},
+      ScaleInterval{1096.17389},
+      ScaleInterval{2, 1}};
 
-  for (auto interval : bremmer_ebvt3)
+  for (auto itv : bremmer_ebvt3)
   {
-    std::cout << interval.cents() << '\n';
+    std::cout << itv.cents() << '\n';
   }
-
-  std::cout << CentsInterval{395.79561}.cents() << '\n';
-  std::cout << RationalInterval{4, 3}.cents() << '\n';
-
   return EXIT_SUCCESS;
 }
