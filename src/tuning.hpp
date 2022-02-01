@@ -62,15 +62,8 @@ private:
 public:
   Tuning(std::string name,
          std::string description,
-         int degree,
          std::vector<TuningInterval> intervals)
-      : name(name), description(description), intervals(intervals)
-  {
-    if (degree != this->degree())
-    {
-      throw std::invalid_argument("Could not build scale: Wrong scale degree specified.");
-    }
-  };
+      : name(name), description(description), intervals(intervals){};
 
   int degree() const
   {

@@ -8,7 +8,6 @@ int main()
   Tuning bremmer_ebvt3 = Tuning{
       "bremmer_ebvt3.scl",
       "Bill Bremmer EBVT III temperament (2011)",
-      12,
       std::vector<TuningInterval>{
           TuningInterval{94.87252},
           TuningInterval{197.05899},
