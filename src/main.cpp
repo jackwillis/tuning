@@ -22,8 +22,8 @@ int main()
           TuningInterval{1096.17389},
           TuningInterval{2, 1}}};
 
-  bremmer_ebvt3.stream_scala(std::cout);
-  std::cout << "---------------------------------------------\n";
+  // bremmer_ebvt3.stream_scala(std::cout);
+  // std::cout << "---------------------------------------------\n";
   bremmer_ebvt3.stream_table(std::cout);
 
   return EXIT_SUCCESS;

@@ -1,3 +1,9 @@
+// tuning.hpp:
+// Tuning class represents the data in a Scala scale file.
+
+// Refer to source of haskell package hmt which parses Scala files
+// https://hackage.haskell.org/package/hmt-0.16/docs/
+
 #pragma once
 
 #include <cmath>
@@ -7,48 +13,43 @@
 
 #include <boost/rational.hpp>
 
+// For Rust-style matching on variant types lol
 // https://dev.to/tmr232/that-overloaded-trick-overloading-lambdas-in-c17
 template <class... Ts>
-struct overloaded : Ts...
+struct match : Ts...
 {
   using Ts::operator()...;
 };
 template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
+match(Ts...) -> match<Ts...>;
 
-// Refer to source of haskell package hmt
-// https://hackage.haskell.org/package/hmt-0.16/docs/
+////////
 
 const int CENTS_PER_OCTAVE = 1200;
 
-// https://stackoverflow.com/a/11714601/3551701
-static int euclidean_remainder(int a, int b)
-{
-  assert(b != 0);
-  int r = a % b;
-  return r >= 0 ? r : r + std::abs(b);
-}
+// Tuning intervals can be written as either a
+// difference in cents (type double), meaning percents of a semitone, or as a
+// frequency ratio (type rational<int>).
 
-// Tuning intervals can be written as either
-// cents (type double), meaning percent of a semitone, or as a
-// ratio (type rational).
-// This class is a wrapper for a std::variant of the two,
-// which depends on some visitor structs,
-// particularly for converting between cents and ratios.
-//
+typedef double Cents;
+typedef boost::rational<int> Ratio;
+
 class TuningInterval
 {
 private:
-  const std::variant<double, boost::rational<int>> v;
+  const std::variant<Cents, Ratio> v;
 
 public:
-  TuningInterval(double cents) : v(cents){};
-  TuningInterval(int numer, int denom) : v(boost::rational<int>(numer, denom)){};
+  TuningInterval(Cents cents) : v(cents){};
+  TuningInterval(int numer, int denom) : v(Ratio{numer, denom}){};
 
-  double cents() const;
-  double ratio() const;
-  TuningInterval add_cents(double delta) const;
+  Cents cents() const;
+  Ratio ratio() const;
+  double f_ratio() const;
+
+  TuningInterval add_cents(Cents delta) const;
   TuningInterval transpose_octaves(int octaves) const;
+
   std::string str() const;
 };
 
@@ -65,53 +66,9 @@ public:
          std::vector<TuningInterval> intervals)
       : name(name), description(description), intervals(intervals){};
 
-  int degree() const
-  {
-    return static_cast<int>(intervals.size());
-  }
+  int degree() const;
+  TuningInterval at(int n) const;
 
-  TuningInterval at(int n) const
-  {
-    const int index = euclidean_remainder(n - 1, this->degree());
-    const auto interval = intervals.at((std::size_t)index);
-
-    const int octave = ((n - 1) / this->degree()) - 1;
-
-    return interval.transpose_octaves(octave);
-  }
-
-  void stream_scala(std::ostream &out)
-  {
-    out << "! "
-        << this->name << "\n! \n"
-        << this->description << '\n'
-        << this->degree() << "\n!\n";
-
-    for (const auto &interval : this->intervals)
-    {
-      out << interval.str() << '\n';
-    }
-  }
-
-  void stream_table(std::ostream &out)
-  {
-    const auto small_pad = std::setw(6);
-    const auto big_pad = std::setw(15);
-
-    out << small_pad << "Index"
-        << big_pad << "Str"
-        << big_pad << "Cents"
-        << big_pad << "Ratio"
-        << '\n';
-
-    for (int i = this->degree() * -1; i != this->degree() * 3; ++i)
-    {
-      const auto interval = this->at(i);
-      out << small_pad << i
-          << big_pad << interval.str()
-          << big_pad << interval.cents()
-          << big_pad << interval.ratio()
-          << '\n';
-    }
-  }
+  void stream_scala(std::ostream &out);
+  void stream_table(std::ostream &out);
 };
